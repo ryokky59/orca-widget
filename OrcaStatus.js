@@ -104,7 +104,43 @@ function hhmm(ms) {
   return df.string(new Date(ms));
 }
 
+// Parameter に「demo」と入れると例のデータで表示する（スクリーンショット用）
+function demoData() {
+  const now = Date.now();
+  const m = (n) => now - n * 60000;
+  const a = (repo, wt, title, state, min, extra = {}) => ({
+    repo, worktree: wt, worktreeId: `demo-${repo}-${wt}`, paneKey: null, title, state,
+    attention: ["waiting", "blocked", "needs-input", "error"].includes(state),
+    unread: false, agentType: "claude", tool: null, subagentsWorking: 0,
+    message: null, since: m(min), updatedAt: m(min), automation: null, ...extra,
+  });
+  const agents = [
+    a("todo-app", "feature/sync", "同期処理のリトライを追加", "blocked", 42,
+      { tool: "Bash", message: "npm test を実行してよいですか？" }),
+    a("todo-app", "main", "設定画面のダークモード対応", "working", 6,
+      { subagentsWorking: 2, message: "色のトークンを置き換えています" }),
+    a("blog", "main", "記事一覧のページ送り", "waiting", 3,
+      { message: "無限スクロールとページ番号、どちらにしますか？" }),
+    a("api-server", "fix/login", "ログインの不具合を調べる", "working", 15,
+      { message: "トークンの有効期限の比較を確認しています" }),
+    a("api-server", "main", "依存パッケージの更新", "done", 25,
+      { unread: true, message: "更新して PR を作りました" }),
+  ];
+  return {
+    ok: true, generatedAt: now, appRunning: true, runtimeReady: true,
+    counts: { working: 2, attention: 2, done: 1, idle: 3, subagents: 2, unreadDone: 1, doneToday: 7 },
+    agents,
+    usage: {
+      session: { usedPercent: 64, resetsAt: now + 95 * 60000 },
+      weekly: { usedPercent: 38, resetsAt: now + 4 * 86400000 },
+      fableWeekly: { usedPercent: 0, resetsAt: now + 4 * 86400000 },
+      updatedAt: now,
+    },
+  };
+}
+
 async function load() {
+  if (HOST.toLowerCase() === "demo") return { data: demoData(), stale: false };
   if (!HOST) return { data: null, stale: true, error: "no-host" };
   const fm = FileManager.local();
   const path = fm.joinPath(fm.documentsDirectory(), CACHE_FILE);

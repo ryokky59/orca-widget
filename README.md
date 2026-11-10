@@ -34,6 +34,7 @@ cd orca-widget
 4. ホーム画面長押し → 「＋」→ Scriptable → 好きなサイズを追加 → ウィジェットを長押しして「ウィジェットを編集」→ Script に「Orca」、**Parameter に Mac の IP**（例 `100.101.102.103`）を入れる。
    - ロック画面にも置ける: ロック画面長押し → カスタマイズ → ロック画面 → ウィジェット欄 → Scriptable（丸・長方形）を追加 → タップして Script に「Orca」、Parameter に IP。日付の上の 1 行欄にも置ける。
    - ウィジェットごとに Parameter を入れるのが面倒なら、`OrcaStatus.js` 冒頭の `MAC_HOST` に IP を書いてもよい（Parameter が優先）。
+   - Parameter に `demo` と入れると、Mac につながずに例のデータで表示する（見た目の確認やスクリーンショット用）。
 5. Scriptable でスクリプトを ▶ 実行するとプレビューが出る（このときは `MAC_HOST` が使われる）。
 6. タップで Orca アプリのチャットを開くには、`OrcaStatus.js` 冒頭の `ORCA_HOST_ID` に iPhone の Orca アプリでの Mac のホスト ID を入れる（下記。今は調べる手段がない）。
 
