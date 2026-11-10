@@ -14,7 +14,7 @@ iPhone (Scriptable) --Tailscale--> Mac の server.py :8765/status --> orca workt
 ## Mac 側
 
 ```sh
-git clone <このリポジトリ> orca-widget
+git clone https://github.com/ryokky59/orca-widget.git
 cd orca-widget
 ./install.sh
 ```
