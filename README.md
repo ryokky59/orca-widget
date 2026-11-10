@@ -2,6 +2,19 @@
 
 Mac で動いている [Orca](https://github.com/stablyai/orca) のエージェントの状態を、iPhone のホーム画面・ロック画面のウィジェット（Scriptable）で見る。
 
+![ホーム画面のウィジェット（大・中・小）](docs/home-light.png)
+
+<details>
+<summary>ダークモードとロック画面</summary>
+
+![ホーム画面のウィジェット（ダーク）](docs/home-dark.png)
+
+![ロック画面のウィジェット（1 行・丸・長方形）](docs/lock.png)
+
+</details>
+
+画像は例のデータ（Parameter: `demo`）です。`tools/screenshots/make.sh` で、`OrcaStatus.js` をブラウザ上の Scriptable もどきで描いて作っています（Google Chrome が必要）。実機とは文字の詰まり具合などが少し違います。
+
 ```
 iPhone (Scriptable) --Tailscale--> Mac の server.py :8765/status --> orca worktree ps / account list
 ```

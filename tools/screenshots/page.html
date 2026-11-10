@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { -webkit-font-smoothing: antialiased; }
+  .home { display: inline-flex; gap: 24px; padding: 28px; border-radius: 0; }
+  .home.light { background: linear-gradient(140deg, #c9d6f2 0%, #d8cdee 55%, #f0d3dc 100%); }
+  .home.dark { background: linear-gradient(140deg, #1b2440 0%, #2a1f45 55%, #3d1f30 100%); }
+  .col { display: flex; flex-direction: column; gap: 22px; }
+  .row { display: flex; gap: 22px; align-items: flex-start; }
+  .w { box-shadow: 0 6px 20px rgba(0, 0, 0, .14); border-radius: 22px; }
+  .lock { width: 460px; min-height: 100vh; padding: 30px 24px 34px; box-sizing: border-box; color: #fff;
+    background: linear-gradient(165deg, #22305a 0%, #3d2a5c 55%, #6b3550 100%);
+    font-family: -apple-system, "SF Pro Display", "Hiragino Sans", sans-serif; }
+  .lock .date { display: flex; justify-content: center; align-items: center; gap: 10px; white-space: nowrap; font-size: 17px; font-weight: 600; opacity: .92; }
+  .lock .clock { text-align: center; font-size: 92px; font-weight: 700; line-height: 1; letter-spacing: -2px; margin: 4px 0 18px; }
+  .lock .acc { display: flex; justify-content: center; gap: 14px; align-items: center; }
+  .lock .rect { padding: 2px 4px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="emulator.js"></script>
+<script src="widget-src.js"></script>
+<script>
+// 時刻を 9:41 に止める（デモのデータは Date.now() からの相対時刻で作られる）
+const FIXED = new Date(2026, 10, 10, 9, 41, 0).getTime();
+Date.now = () => FIXED;
+
+const view = new URLSearchParams(location.search).get("view") || "home-light";
+const root = document.getElementById("root");
+const R = (family, w, h, extra = {}) =>
+  ScriptableEmu.renderWidget(WIDGET_SRC, { family, width: w, height: h, ...extra });
+
+(async () => {
+  if (view.startsWith("home")) {
+    const theme = view.endsWith("dark") ? "dark" : "light";
+    const home = document.createElement("div");
+    home.className = `home ${theme}`;
+    const left = await R("large", 338, 354, { theme });
+    const right = document.createElement("div");
+    right.className = "col";
+    const med = await R("medium", 338, 158, { theme });
+    const row = document.createElement("div");
+    row.className = "row";
+    const small = await R("small", 158, 158, { theme });
+    [left, med, small].forEach((e) => e.classList.add("w"));
+    row.append(small);
+    right.append(med, row);
+    home.append(left, right);
+    root.append(home);
+  } else {
+    const lock = document.createElement("div");
+    lock.className = "lock";
+    const inline = await R("accessoryInline", 260, 22, { mono: true });
+    inline.style.alignItems = "center";
+    inline.style.width = "auto";
+    const date = document.createElement("div");
+    date.className = "date";
+    date.append(Object.assign(document.createElement("span"), { textContent: "11月10日 火" }), inline);
+    const clock = Object.assign(document.createElement("div"), { className: "clock", textContent: "9:41" });
+    const acc = document.createElement("div");
+    acc.className = "acc";
+    const circ = await R("accessoryCircular", 72, 72, { mono: true });
+    const rect = await R("accessoryRectangular", 172, 72, { mono: true });
+    rect.classList.add("rect");
+    acc.append(circ, rect);
+    lock.append(date, clock, acc);
+    root.append(lock);
+  }
+  await document.fonts.ready;
+  ScriptableEmu.shrinkTexts(root);
+  document.body.dataset.ready = "1";
+})().catch((e) => { document.body.textContent = "ERROR: " + e.stack; });
+</script>
+</body>
+</html>
