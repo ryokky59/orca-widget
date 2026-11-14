@@ -359,11 +359,21 @@ function usageRow(stack, label, win, barWidth, opts = {}) {
   return row;
 }
 
+// 取れている枠だけを並べる。プランによっては 5 時間枠がない（Ultra など）。
+// Fable の週枠は、使っているときか、ほかに枠がないときだけ出す
+function usageWindows(u) {
+  if (!u) return [];
+  const out = [];
+  if (u.session) out.push({ label: "Claude 5h", short: "5h", win: u.session });
+  if (u.weekly) out.push({ label: "Claude 週", short: "週", win: u.weekly });
+  if (u.fableWeekly && (u.fableWeekly.usedPercent > 0 || !out.length)) {
+    out.push({ label: "Fable 週", short: "Fable", win: u.fableWeekly });
+  }
+  return out;
+}
+
 function usageRowsLarge(u) {
-  const rows = [["Claude 5h", u.session]];
-  if (u.weekly) rows.push(["Claude 週", u.weekly]);
-  if (u.fableWeekly && u.fableWeekly.usedPercent > 0) rows.push(["Fable 週", u.fableWeekly]);
-  return rows;
+  return usageWindows(u).map((x) => [x.label, x.win]);
 }
 
 // ロック画面の丸型: 5h の使用率をリングで、件数を中央に描く
@@ -498,7 +508,8 @@ function buildSmall(w, d, active, groups, usage) {
     agentRow(w, a, { more: groups[0].agents.length - 1, hideRepo: a.attention, noAgo: !a.attention });
   }
   w.addSpacer();
-  if (usage) usageRow(w, "5h", usage.session, 62);
+  const wins = usageWindows(usage);
+  if (wins.length) usageRow(w, wins[0].short, wins[0].win, 62);
 }
 
 function buildMedium(w, d, active, groups, usage) {
@@ -529,11 +540,12 @@ function buildMedium(w, d, active, groups, usage) {
   const foot = w.addStack();
   foot.layoutHorizontally();
   foot.centerAlignContent();
-  if (usage) {
-    usageRow(foot, "Claude 5h", usage.session, 46);
-    if (usage.weekly) {
+  const wins = usageWindows(usage);
+  if (wins.length) {
+    usageRow(foot, wins[0].label, wins[0].win, 46);
+    if (wins[1]) {
       foot.addSpacer(12);
-      usageRow(foot, "週", usage.weekly, 46);
+      usageRow(foot, wins[1].short, wins[1].win, 46);
     }
   }
   foot.addSpacer();
@@ -610,7 +622,8 @@ function buildAccessory(res, family) {
   const active = ok ? (d.agents || []).filter((a) => a.state !== "idle") : [];
   const longWait = active.some(isLongWait);
   const stale = res.stale ? " (古)" : "";
-  const u = ok && d.usage && d.usage.session ? d.usage : null;
+  const wins = ok ? usageWindows(d.usage) : [];
+  const u = wins[0] || null; // いちばん上の枠（ふつうは 5h、Ultra などでは週）
   if (active.length) w.url = orcaLink(active[0]);
 
   if (family === "accessoryInline") {
@@ -619,7 +632,7 @@ function buildAccessory(res, family) {
     else if (!ok) t = "Orca 停止中";
     else if (c.attention) t = `Orca ${longWait ? "⚠" : ""}要対応${c.attention} 稼働${c.working || 0}`;
     else t = `Orca 稼働${c.working || 0}`;
-    if (u) t += ` 5h${u.session.usedPercent}%`;
+    if (u) t += ` ${u.short}${u.win.usedPercent}%`;
     w.addText(t + stale);
     return w;
   }
@@ -629,7 +642,7 @@ function buildAccessory(res, family) {
     const n = c.attention ? c.attention : c.working || 0;
     const label = !ok ? "Orca" : c.attention ? (longWait ? "⚠待ち" : "要対応") : "稼働";
     // リング = Claude 5h の使用率、中央 = 要対応（なければ稼働）の件数
-    w.addImage(ringImage(u ? u.session.usedPercent : null, ok ? String(n) : "—", label));
+    w.addImage(ringImage(u ? u.win.usedPercent : null, ok ? String(n) : "—", label));
     return w;
   }
 
@@ -648,9 +661,9 @@ function buildAccessory(res, family) {
     t.minimumScaleFactor = 0.7;
   });
   if (u) {
-    const p = u.session.usedPercent;
-    let line = `Claude 5h ${p}%${p >= 80 ? "⚠" : ""} (${resetText(u.session.resetsAt)})`;
-    if (u.weekly) line += ` · 週 ${u.weekly.usedPercent}%`;
+    const p = u.win.usedPercent;
+    let line = `Claude ${u.short} ${p}%${p >= 80 ? "⚠" : ""} (${resetText(u.win.resetsAt)})`;
+    if (wins[1]) line += ` · ${wins[1].short} ${wins[1].win.usedPercent}%`;
     const t = w.addText(line);
     t.font = p >= 80 ? Font.boldSystemFont(11) : Font.systemFont(11);
     t.lineLimit = 1;
@@ -686,7 +699,7 @@ async function build() {
   if ((d.counts || {}).attention) w.backgroundColor = C.attentionBg;
   const active = (d.agents || []).filter((a) => a.state !== "idle");
   const groups = groupByRepo(active);
-  const usage = d.usage && d.usage.session ? d.usage : null;
+  const usage = usageWindows(d.usage).length ? d.usage : null;
   if (family === "small") buildSmall(w, d, active, groups, usage);
   else if (family === "medium") buildMedium(w, d, active, groups, usage);
   else buildLarge(w, d, active, groups, usage);
